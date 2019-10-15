@@ -14,11 +14,6 @@ float **createImage(int rows, int columns) {
   for (int i = 0; i < rows; i++) {
     image[i] = (float *)malloc(sizeof(float) * columns);
   }
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < columns; j++) {
-      image[i][j] = 0;
-    }
-  }
   return image;
 }
 
@@ -42,13 +37,24 @@ Complex complexsquare(Complex complex) {
 }
 
 double mandelbrot(Complex c, int depth) {
-  Complex Zn = c;
-  float n = 1;
-  while (complexAbsolute(Zn) < 2 && n < depth) {
-    Zn = complexSum(complexsquare(Zn), c);
-    n += 1;
+  int iterador;
+  double aux_real, aux_imag;
+  Complex z_n;
+
+  z_n.real = 0;
+  z_n.imaginary = 0;
+  iterador = 1;
+
+  z_n.real = z_n.real + c.real;
+  z_n.imaginary = z_n.imaginary + c.imaginary;
+  while(complexAbsolute(z_n) < 2 && iterador < depth){
+    aux_real = (z_n.real * z_n.real)  - (z_n.imaginary * z_n.imaginary);
+    aux_imag = 2 * z_n.real * z_n.imaginary;
+    z_n.real = aux_real + c.real;
+    z_n.imaginary = aux_imag + c.imaginary;
+    iterador +=1;
   }
-  return log(n) + 1;
+  return log(iterador) + 1;
 }
 
 double getDistance(double upperLimit, double lowerLimit, double sampling) {
@@ -70,11 +76,6 @@ void createMandelbrotImage(double lowerLimitImaginary, double lowerLimitReal,
   }
 }
 
-long getMicrotime(){
-	struct timeval currentTime;
-	gettimeofday(&currentTime, NULL);
-	return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;
-}
 
 int main() {
   // int depth = 500;
@@ -95,16 +96,14 @@ int main() {
   columns = getDistance(upperLimitImaginary, lowerLimitImaginary, sampling);
 
   float **image = createImage(rows, columns);
-  getMicrotime()
   createMandelbrotImage(lowerLimitImaginary, lowerLimitReal, rows, columns,
                         sampling, depth, image);
 
-  printf("%ld\n", getMicrotime());
 
-  FILE *fp = fopen("image.raw", "w+");
+  /*FILE *fp = fopen("image.raw", "w+");
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < columns; j++) {
       fwrite(&image[i][j], sizeof(float), 1, fp);
     }
-  }
+  }*/
 }

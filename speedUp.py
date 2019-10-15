@@ -32,10 +32,10 @@ def divideArray(timeList, sequentialTime):
 
 
 sequentialTime = getSequentialTime()
-pararellTime = getParalellTime(24)
+pararellTime = getParalellTime(200)
 
 pararellTime = divideArray(pararellTime, sequentialTime)
-threads = np.arange(1,25)
+threads = np.arange(1,201)
 
 figure = plt.figure()
 plt.plot(threads, pararellTime)
@@ -43,5 +43,5 @@ plt.plot(threads, pararellTime)
 plt.xlabel('Número de hebras')
 plt.ylabel('S(n)')
 
-figure.savefig('figure.jpg')
+figure.savefig('figure2.jpg')
 exit();

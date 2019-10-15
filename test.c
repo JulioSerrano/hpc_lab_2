@@ -30,30 +30,25 @@ float **createImage(int rows, int columns) {
 }
 
 double complexAbsolute(Complex c) {
-  return sqrt((square(c.real) + square(c.imaginary)));
-}
-
-Complex complexSum(Complex c1, Complex c2) {
-  Complex c;
-  c.imaginary = c1.imaginary + c2.imaginary;
-  c.real = c1.real + c2.real;
-  return c;
-}
-
-Complex complexsquare(Complex complex) {
-  Complex c;
-  c.real = square(complex.real) + square(complex.imaginary) * -1;
-  c.imaginary = 2 * complex.real * complex.imaginary;
-
-  return c;
+  return sqrt((c.real*c.real) + (c.imaginary*c.imaginary));
 }
 
 double mandelbrot(Complex c, int depth) {
-  Complex Zn = c;
-  float n = 1;
-  while (complexAbsolute(Zn) < 2 && n < depth) {
-    Zn = complexSum(complexsquare(Zn), c);
-    n += 1;
+  int n;
+  double aux_real, aux_imag;
+  Complex Zn;
+
+  Zn.imaginary = 0;
+  n = 1;
+
+  Zn.real = c.real;
+  Zn.imaginary = Zn.imaginary + c.imaginary;
+  while(complexAbsolute(Zn) < 2 && n < depth){
+    aux_real = Zn.real*Zn.real - Zn.imaginary*Zn.imaginary;
+    aux_imag = 2 * Zn.real * Zn.imaginary;
+    Zn.real = aux_real + c.real;
+    Zn.imaginary = aux_imag + c.imaginary;
+    n +=1;
   }
   return log(n) + 1;
 }
@@ -62,9 +57,6 @@ double getDistance(double upperLimit, double lowerLimit, double sampling) {
   return round((upperLimit - lowerLimit) / sampling) + 1;
 }
 
-double distance(double x, double y) {
-	return sqrt( square(x) + square(y) );
-}
 
 void createMandelbrotImage(double lowerLimitImaginary, double lowerLimitReal,
                            int rows, int columns, double sampling,
@@ -72,8 +64,8 @@ void createMandelbrotImage(double lowerLimitImaginary, double lowerLimitReal,
   
   double x, y;
 	int n, i, j;
-  Complex c,Zn;
-  # pragma omp parallel shared(image, sampling, depth, rows, columns) private(c, x, y, Zn, n, i, j) num_threads(threads)
+  Complex c;
+  # pragma omp parallel shared(image, sampling, depth, rows, columns) private(c, x, y, n, i, j) num_threads(threads)
   {
     # pragma omp for
     for (i = 0; i < columns; i++) {
@@ -83,12 +75,8 @@ void createMandelbrotImage(double lowerLimitImaginary, double lowerLimitReal,
 				n = 1;
 				c.real = x;
 				c.imaginary = y;
-        Zn = c;
-				while( complexAbsolute(Zn) < 2 && n < depth) {
-					Zn = complexSum(complexsquare(Zn), c);
-					n++;
-				}
-				image[i][j] = log(n) + 1;
+        
+				image[i][j] = mandelbrot(c,depth);
       }
     }
   }
