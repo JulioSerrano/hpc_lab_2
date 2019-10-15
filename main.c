@@ -70,28 +70,36 @@ void createMandelbrotImage(double lowerLimitImaginary, double lowerLimitReal,
   }
 }
 
+long getMicrotime(){
+	struct timeval currentTime;
+	gettimeofday(&currentTime, NULL);
+	return currentTime.tv_sec * (int)1e6 + currentTime.tv_usec;
+}
+
 int main() {
-  int depth = 500;
-  double sampling = 0.00000000001;
-  double upperLimitReal = -0.748766707771757;
-  double lowerLimitReal = -0.748766713922161;
-  double upperLimitImaginary = 0.123640851045266;
-  double lowerLimitImaginary = 0.123640844894862;
   // int depth = 500;
-  // double sampling = 0.001;
-  // double upperLimitReal = 1;
-  // double lowerLimitReal = -1;
-  // double upperLimitImaginary = 1;
-  // double lowerLimitImaginary = -1;
+  // double sampling = 0.00000000001;
+  // double upperLimitReal = -0.748766707771757;
+  // double lowerLimitReal = -0.748766713922161;
+  // double upperLimitImaginary = 0.123640851045266;
+  // double lowerLimitImaginary = 0.123640844894862;
+  int depth = 500;
+  double sampling = 0.001;
+  double upperLimitReal = 1;
+  double lowerLimitReal = -1;
+  double upperLimitImaginary = 1;
+  double lowerLimitImaginary = -1;
 
   double i, j, rows, columns;
   rows = getDistance(upperLimitReal, lowerLimitReal, sampling);
   columns = getDistance(upperLimitImaginary, lowerLimitImaginary, sampling);
 
   float **image = createImage(rows, columns);
-  
+  getMicrotime()
   createMandelbrotImage(lowerLimitImaginary, lowerLimitReal, rows, columns,
                         sampling, depth, image);
+
+  printf("%ld\n", getMicrotime());
 
   FILE *fp = fopen("image.raw", "w+");
   for (int i = 0; i < rows; i++) {

@@ -1,6 +1,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
+#include <sys/time.h>
+#include <time.h>
+#include <unistd.h> 
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -64,62 +68,101 @@ double distance(double x, double y) {
 
 void createMandelbrotImage(double lowerLimitImaginary, double lowerLimitReal,
                            int rows, int columns, double sampling,
-                           int depth, float **image) {
+                           int depth, float **image, int threads) {
   
-  double Cx, Cy, Zn_r, Zn_i, Zn_aux;
+  double x, y;
 	int n, i, j;
-  # pragma omp parallel shared(image, sampling, depth, rows, columns) private(Cx, Cy, Zn_r, Zn_i, Zn_aux, n, i, j) num_threads(10)
+  Complex c,Zn;
+  # pragma omp parallel shared(image, sampling, depth, rows, columns) private(c, x, y, Zn, n, i, j) num_threads(threads)
   {
     # pragma omp for
-    for (i = 0; i < rows; i++) {
-      Cy = lowerLimitImaginary + sampling * i;
-      for (j = 0; j < columns; j++) {
-        Cx = lowerLimitReal + sampling * j;
+    for (i = 0; i < columns; i++) {
+      y = lowerLimitImaginary + sampling * i;
+      for (j = 0; j < rows; j++) {
+        x = lowerLimitReal + sampling * j;
 				n = 1;
-				Zn_r = Cx;
-				Zn_i = Cy;
-				while( distance(Zn_r, Zn_i) < 2 && n < depth) {
-					Zn_aux = square(Zn_r) + Cx - square(Zn_i);
-					Zn_i = 2*Zn_i*Zn_r + Cy;
-					Zn_r = Zn_aux;		
+				c.real = x;
+				c.imaginary = y;
+        Zn = c;
+				while( complexAbsolute(Zn) < 2 && n < depth) {
+					Zn = complexSum(complexsquare(Zn), c);
 					n++;
 				}
-				image[j][i] = log(n) + 1;
+				image[i][j] = log(n) + 1;
       }
     }
   }
 }
 
+int main(int argc, char **argv) {
+  int depth, c, threads;
+  double sampling;
+  double upperLimitReal;
+  double lowerLimitReal;
+  double upperLimitImaginary;
+  double lowerLimitImaginary;
+  char* filename = (char *)malloc(sizeof(char) * 20);
 
-
-int main() {
-  int depth = 500;
-  double sampling = 0.00000000001;
-  double upperLimitReal = -0.748766707771757;
-  double lowerLimitReal = -0.748766713922161;
-  double upperLimitImaginary = 0.123640851045266;
-  double lowerLimitImaginary = 0.123640844894862;
-  // int depth = 500;
-  // double sampling = 0.001;
-  // double upperLimitReal = 1;
-  // double lowerLimitReal = -1;
-  // double upperLimitImaginary = 1;
-  // double lowerLimitImaginary = -1;
+  while ((c = getopt(argc, argv, "i:a:b:c:d:s:f:t:")) != -1)
+    switch (c) {
+    case 'i':
+      depth = atoi(optarg);
+      break;
+    case 'a':
+      lowerLimitReal = atof(optarg);
+      break;
+    case 'b':
+      lowerLimitImaginary = atof(optarg);
+      break;
+    case 'c':
+      upperLimitReal = atof(optarg);
+      break;
+    case 'd':
+      upperLimitImaginary = atof(optarg);
+      break;
+    case 's':
+      sampling = atof(optarg);
+      break;
+    case 'f':
+      filename = optarg;
+      break;
+    case 't':
+      threads = atoi(optarg);
+      break;
+    case '?':
+      if (optopt == 'c')
+        fprintf(stderr, "Opcion -%c requiere un argumento.\n", optopt);
+      else if (isprint(optopt))
+        fprintf(stderr, "Opcion desconocida `-%c'.\n", optopt);
+      else
+        fprintf(stderr, "Opcion de caracter desconocido `\\x%x'.\n", optopt);
+      return 1;
+    default:
+      abort();
+    }
 
   double i, j, rows, columns;
   rows = getDistance(upperLimitReal, lowerLimitReal, sampling);
   columns = getDistance(upperLimitImaginary, lowerLimitImaginary, sampling);
 
   float **image = createImage(rows, columns);
-  
-  createMandelbrotImage(lowerLimitImaginary, lowerLimitReal, rows, columns,
-                        sampling, depth, image);
 
-  FILE *fp = fopen("image.raw", "w+");
+  createMandelbrotImage(lowerLimitImaginary, lowerLimitReal, rows, columns,
+                        sampling, depth, image, threads);
+
+  FILE *fp = fopen(filename, "w+");
   for (int i = 0; i < rows; i++) {
     for (int j = 0; j < columns; j++) {
       fwrite(&image[i][j], sizeof(float), 1, fp);
     }
   }
-  fclose(fp);
+
+  // for (int i = 0; i < rows; i++) {
+  //     free(image[i]);
+  // }
+  // free(image);
+  // fclose(fp);
 }
+
+// time ./test -i 500 -a -1 -b -1 -c 1 -d 1 -s 0.001 -f salida.raw -t 24
+// time ./test -i 500 -a -0.748766713922161 -b 0.123640844894862 -c -0.748766707771757 -d 0.123640851045266 -s 1e-11 -f salida.raw -t 12
