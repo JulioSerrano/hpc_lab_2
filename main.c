@@ -3,16 +3,11 @@
 #include <stdlib.h>
 
 typedef struct Complex {
-  float real;
-  float imaginary;
+  double real;
+  double imaginary;
 } Complex;
 
-Complex complexInit(float real, float imaginary) {
-  Complex c;
-  c.imaginary = imaginary;
-  c.real = real;
-  return c;
-}
+double square(double n) { return n * n; }
 
 float **createImage(int rows, int columns) {
   float **image = (float **)malloc(sizeof(float *) * rows);
@@ -27,8 +22,8 @@ float **createImage(int rows, int columns) {
   return image;
 }
 
-float complexAbsolute(Complex c) {
-  return pow(c.real, 2) + pow(c.imaginary, 2);
+double complexAbsolute(Complex c) {
+  return sqrt((square(c.real) + square(c.imaginary)));
 }
 
 Complex complexSum(Complex c1, Complex c2) {
@@ -38,85 +33,65 @@ Complex complexSum(Complex c1, Complex c2) {
   return c;
 }
 
-Complex complexPow(Complex complex) {
+Complex complexsquare(Complex complex) {
   Complex c;
-  c.real = pow(complex.real, 2) + pow(complex.imaginary, 2) * -1;
+  c.real = square(complex.real) + square(complex.imaginary) * -1;
   c.imaginary = 2 * complex.real * complex.imaginary;
 
   return c;
 }
 
-float mandelbrot(Complex c, int depth) {
+double mandelbrot(Complex c, int depth) {
   Complex Zn = c;
   float n = 1;
   while (complexAbsolute(Zn) < 2 && n < depth) {
-    Zn = complexSum(complexPow(Zn), c);
+    Zn = complexSum(complexsquare(Zn), c);
     n += 1;
   }
   return log(n) + 1;
 }
 
-Complex **createComplexMatrix(float upperLimitReal, float lowerLimitReal,
-                              float upperLimitImaginary,
-                              float lowerLimitImaginary, double sampling) {
+double getDistance(double upperLimit, double lowerLimit, double sampling) {
+  return round((upperLimit - lowerLimit) / sampling) + 1;
+}
 
-  float rows = ((upperLimitReal - lowerLimitReal) / sampling) + 1;
-  float columns = ((upperLimitImaginary - lowerLimitImaginary) / sampling) + 1;
-
-  Complex **matrix = (Complex **)malloc(sizeof(Complex *) * rows);
+void createMandelbrotImage(double lowerLimitImaginary, double lowerLimitReal,
+                           double rows, double columns, double sampling,
+                           int depth, float **image) {
+  double x, y;
   for (int i = 0; i < rows; i++) {
-    matrix[i] = (Complex *)malloc(sizeof(Complex) * columns);
-  }
-  float i, j;
-  int x = 0, y = 0;
-  for (i = lowerLimitReal; i <= upperLimitReal; i += sampling) {
-    y = 0;
-    for (j = lowerLimitImaginary; j <= upperLimitImaginary; j += sampling) {
-      matrix[x][y].real = i;
-      matrix[x][y].imaginary = j;
-      y++;
+    y = lowerLimitImaginary + sampling * i;
+    for (int j = 0; j < columns; j++) {
+      Complex c;
+      c.real = lowerLimitReal + sampling * j;
+      c.imaginary = y;
+      image[i][j] = mandelbrot(c, depth);
     }
-    x++;
   }
-  return matrix;
 }
 
 int main() {
   int depth = 500;
-  double sampling = 0.001;
-  float upperLimitReal = 1;
-  float lowerLimitReal = -1;
-  float upperLimitImaginary = 1;
-  float lowerLimitImaginary = -1;
+  double sampling = 0.00000000001;
+  double upperLimitReal = -0.748766707771757;
+  double lowerLimitReal = -0.748766713922161;
+  double upperLimitImaginary = 0.123640851045266;
+  double lowerLimitImaginary = 0.123640844894862;
+  // int depth = 500;
+  // double sampling = 0.001;
+  // double upperLimitReal = 1;
+  // double lowerLimitReal = -1;
+  // double upperLimitImaginary = 1;
+  // double lowerLimitImaginary = -1;
 
-  float i, j;
-
-  float rows = ((upperLimitReal - lowerLimitReal) / sampling) + 1;
-  float columns = ((upperLimitImaginary - lowerLimitImaginary) / sampling) + 1;
-
-  // float *image = (float *)malloc(sizeof(float) * n);
-  // n = 0;
-  // for (i = lowerLimitReal; i <= upperLimitReal; i += sampling) {
-  //   for (j = lowerLimitImaginary; j <= upperLimitImaginary; j += sampling) {
-  //     Complex c = complexInit(i, j);
-  //     image[n] = mandelbrot(c, depth);
-  //     n += 1;
-  //     printf("%d\n", n);
-  //   }
-  // }
-
-  Complex **matrix =
-      createComplexMatrix(upperLimitReal, lowerLimitImaginary,
-                          upperLimitImaginary, lowerLimitImaginary, sampling);
+  double i, j, rows, columns;
+  rows = getDistance(upperLimitReal, lowerLimitReal, sampling);
+  columns = getDistance(upperLimitImaginary, lowerLimitImaginary, sampling);
 
   float **image = createImage(rows, columns);
-
-  for (int i = 0; i < rows; i++) {
-    for (int j = 0; j < columns; j++) {
-      printf("%d %d\n", i, j);
-      image[i][j] = mandelbrot(matrix[i][j], depth);
-    }
-  }
+  
+  createMandelbrotImage(lowerLimitImaginary, lowerLimitReal, rows, columns,
+                        sampling, depth, image);
 
   FILE *fp = fopen("image.raw", "w+");
   for (int i = 0; i < rows; i++) {
