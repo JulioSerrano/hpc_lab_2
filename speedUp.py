@@ -2,7 +2,7 @@ import os
 import numpy as np
 from matplotlib import pylab as plt
 
-cmd = 'time -f "%E" -o file.txt ./test -i 500 -a -0.748766713922161 -b 0.123640844894862 -c -0.748766707771757 -d 0.123640851045266 -s 1e-11 -f salida.raw -t 1'
+cmd = 'time -f "%E" -o file.txt ./bin/mandelbrot -i 500 -a -1 -b -1 -c 1 -d 1 -s 0.001 -f salida.raw'
 
 def getSequentialTime():
     so = os.popen(cmd).read()
@@ -13,7 +13,7 @@ def getSequentialTime():
 def getParalellTime(n):
     i = 1
     timeList = []
-    cmd = 'time -f "%E" -o file.txt ./test -i 500 -a -0.748766713922161 -b 0.123640844894862 -c -0.748766707771757 -d 0.123640851045266 -s 1e-11 -f salida.raw -t '
+    cmd = 'time -f "%E" -o file.txt ./bin/mandelbrotp -i 500 -a -1 -b -1 -c 1 -d 1 -s 0.001 -f salida.raw -t '
     while i <= n:
         so = os.popen(cmd + str(i)).readline()
         f= open("file.txt","r")
@@ -32,10 +32,10 @@ def divideArray(timeList, sequentialTime):
 
 
 sequentialTime = getSequentialTime()
-pararellTime = getParalellTime(200)
+pararellTime = getParalellTime(24)
 
 pararellTime = divideArray(pararellTime, sequentialTime)
-threads = np.arange(1,201)
+threads = np.arange(1,25)
 
 figure = plt.figure()
 plt.plot(threads, pararellTime)
